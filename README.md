@@ -6,7 +6,7 @@
 
 LightGBM で学習させた回帰モデルをFlaskでWeb化し、レスポンシブで見やすいUIを実装しました。
 
-![ダッシュボードのデモ](images/demo.gif)  
+![ダッシュボードのデモ](images/demo.gif)
 条件入力 → 判定結果表示までのデモ
 
 
