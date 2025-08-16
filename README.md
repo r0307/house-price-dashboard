@@ -9,6 +9,7 @@ LightGBM で学習させた回帰モデルをFlaskでWeb化し、レスポンシ
 ![ダッシュボードのデモ](images/demo.gif)  
 条件入力 → 判定結果表示までのデモ
 
+
 ![学習曲線](images/learning_curve.png)
 LightGBM モデルの学習曲線。訓練データと検証データで過学習が起きていないことを確認
 
