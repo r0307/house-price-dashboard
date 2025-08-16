@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>住宅価格予測ダッシュボード</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-8xl mx-auto flex flex-col md:flex-row">
+      <div class="w-full md:w-1/2 md:pr-8 mb-8 md:mb-0">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">カリフォルニアの住宅価格予測</h1>
+            <p class="text-lg text-gray-700 mb-3">
+                住宅の詳細を入力して、価格を予測します。初期値には、学習データの平均値を設定しています。
+            </p>
+            <p class="text-xs text-gray-600 mb-2">Model trained with LightGBM on California Housing Dataset</p>
+            <p class="text-xs text-gray-600 mb-1">※この予測はデモンストレーション目的のみであり、実際の市場価格とは異なる場合があります。</p>
+            <p class="text-xs text-gray-600 mb-6">※この予測モデルは、平均して実際の価格の ±{{ "%.2f"|format(mape) }}% 程度の誤差があります。</p>
+
+        <form action="/" method="post" class="space-y-4">
+                {% for key, config in features_config.items() %}
+                <div class="flex flex-col">
+                    <label for="{{ key }}" class="text-sm font-medium text-gray-700 mb-1">{{ config.label }}</label>
+                    <input type="number" id="{{ key }}" name="{{ key }}" 
+                           class="border-2 border-gray-300 rounded-lg p-2 focus:outline-none focus:border-blue-500"
+                           value="{{ initial_values[key] }}" min="{{ config.min }}" max="{{ config.max }}" step="{{ config.step }}">
+                </div>
+                {% endfor %}
+                <div class="flex flex-col">
+                    <label for="x_feature_select" class="text-sm font-medium text-gray-700 mb-1">X軸に表示する項目を選択</label>
+                    <select id="x_feature_select" name="x_feature_select" class="border-2 border-gray-300 rounded-lg p-2 focus:outline-none focus:border-blue-500">
+                        {% for key, config in features_config.items() %}
+                            <option value="{{ key }}" {% if key == selected_x_feature %}selected{% endif %}>{{ config.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition duration-300">
+                    価格を予測
+                </button>
+        </form>
+        {% if error %}
+        <div class="mt-6 p-4 bg-red-100 text-red-700 rounded-lg shadow-sm">
+          {{ error }}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="w-full md:w-1/2">
+        {% if prediction %}
+        <div class="flex flex-col items-center justify-center h-full">
+              <div class="mt-6 p-6 bg-teal-100 text-teal-700 rounded-lg shadow-sm w-full text-center">
+                  <h2 class="text-xl font-semibold mb-2">予測される住宅価格：</h2>
+                  <p class="text-4xl font-extrabold">{{ "%.2f"|format(prediction*10) }}万ドル</p>
+              </div>
+              <div class="mt-8 p-6 bg-gray-50 text-gray-700 rounded-lg shadow-sm w-full">
+                <h3 class="text-lg font-semibold mb-2">グラフの見方</h3>
+                <p class="text-sm">このグラフは予測結果の妥当性を確認するために役立ちます。</p>
+                <ul class="list-disc list-inside mt-2 text-sm space-y-1">
+                  <li><span class="font-bold text-yellow-500">★</span>：あなたが入力した条件に対する予測結果です。</li>
+                  <li><span class="font-bold text-gray-400">●</span>：あなたの入力値から±10%の範囲にある実際の住宅データです。</li>
+                  <li><span class="font-bold text-yellow-500">★</span>が<span class="font-bold text-gray-400">●</span>の集まりの中に位置していれば、予測は妥当であると考えられます。集まりから大きく離れている場合は、予測の信頼性が低い可能性があります。</li>
+                </ul>
+              </div>
+
+              <img src="{{ url_for('static', filename=plot_url) }}" alt="Prediction Plot" class="mt-8 max-w-full h-auto rounded-lg shadow-md">
+              <div class="mt-16 pt-4 border-t border-gray-200 w-full text-center">
+                <h3 class="text-xl font-bold text-teal-600 mb-4">モデルの評価（テストデータ）</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-4 sm:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm font-medium text-gray-500">R²スコア</p>
+                        <p class="text-2xl font-semibold text-teal-800 mt-1">{{ "%.4f"|format(r2_score) }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm font-medium text-gray-500">MAE (万ドル)</p>
+                        <p class="text-2xl font-semibold text-teal-800 mt-1">{{ "%.2f"|format(mae * 10) }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm font-medium text-gray-500">RMSE (万ドル)</p>
+                        <p class="text-2xl font-semibold text-teal-800 mt-1">{{ "%.2f"|format(rmse * 10) }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <p class="text-sm font-medium text-gray-500">MAPE (%)</p>
+                        <p class="text-2xl font-semibold text-teal-800 mt-1">{{ "%.2f"|format(mape) }}</p>
+                    </div>
+                    </div>
+                        <p class="text-left text-sm text-gray-600 mt-4">
+                        R²スコアはモデルの精度を示します。1に近いほど良いモデルです。MAEは平均的な予測誤差、RMSEは予測が大きく外れたときの誤差、MAPEは平均的な予測誤差(%)を示します。</p>
+                    </div>
+                </div>
+        </div>
+        {% else %}
+        <div class="flex flex-col items-center justify-center h-full text-gray-500">
+          <p class="text-lg">住宅データを入力して予測結果を確認してください。</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
