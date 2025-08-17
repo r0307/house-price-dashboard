@@ -132,7 +132,7 @@ def index():
   plot_url=None
   error=None
 
-  display_feature_keys = [key for key in features_config.keys() if key != "MedInc_log"]
+  display_feature_keys = list(features_config.keys())
   
   selected_x_feature=request.form.get("x_feature_select", "AveRooms")
 
@@ -151,9 +151,8 @@ def index():
       user_df=pd.DataFrame([ordered_input], columns=feature_names)
       #予測
       prediction=model_data["model"].predict(user_df)[0]
-      #横軸選択がMedIncの場合はMedInc_logを使用
-      plot_x_feature_name = selected_x_feature
-      plot_url=create_prediction_plot(user_df, prediction, plot_x_feature_name)
+      #plot_url
+      plot_url=create_prediction_plot(user_df, prediction, selected_x_feature)
       #再表示時にユーザーの入力値を使用
       initial_values_to_pass = user_input_dict
     except (ValueError, TypeError) as e:

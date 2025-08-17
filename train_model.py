@@ -32,7 +32,6 @@ mean_values = {
             "Dist_SF": df["Dist_SF"].mean(),
         }
 
-t=df["Target"]
 x=df.drop(columns=["Target","AveBedrms","Population"])
 x_train,x_test,t_train, t_test=train_test_split(x,t,test_size=0.2, random_state=0)
 
